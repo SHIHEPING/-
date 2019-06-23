@@ -1,0 +1,184 @@
+<html>
+<head>
+<title>图书管理系统</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="css/style.css">
+<link rel="stylesheet" type="text/css" href="css/jquery-ui.css">
+<script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript">
+	//通过AJAX方式检索所有的图书
+	function RetrieveBooks() {
+		$.post("list.action", {}, function(data) {
+			$("#BooksTable tr:gt(0)").remove();	
+			for (var i = 0; i < data.length; i++) {
+				//插入表行
+				var trHtml = "<tr id = "+data[i].id +"><td>" + data[i].bookname + "</td><td>"
+						+ data[i].author + "</td><td>" + data[i].price
+						+ "</td><td><a href=\"#\" class=\"updateLink\">修改</a> <a href=\"#\" class=\"deleteLink\">删除</a></td></tr>";
+				$("#BooksTable").append(trHtml);
+			}
+			//绑定修改链接
+			$(".updateLink").click(function() {
+				$.post("edit.action", {id:$(this).closest("tr").attr("id")}, function(data){
+					$("#UpdateId").val(data.id);
+					$("#UpdateBookName").val(data.bookname);
+					$("#UpdateAuthor").val(data.author);
+					$("#UpdatePrice").val(data.price);
+					$("#UpdateDiv").dialog("open");
+				}, "json");
+			});
+			//绑定删除链接
+			$(".deleteLink").click(function(){
+				$.post("delete.action", {id:$(this).closest("tr").attr("id")}, function(data){
+					if (data=="1") {
+						RetrieveBooks();
+					} else
+					{
+						alert("删除图书失败！");
+					}
+				}, "json");
+			});
+		}, "json");
+	}
+	$(function() {
+		//设定Ajax提交编码格式为utf-8
+		$.ajaxSetup({
+			contentType: "application/x-www-form-urlencoded; charset=utf-8"
+		});
+		//对“添加图书信息”窗口进行初始化
+		$("#AddDiv").dialog({
+			title: "添加图书信息",
+			autoOpen : false,
+			height : 280,
+			width : 400,
+			modal : true,
+			show: "blind", 
+			hide: "fade",
+			close : function(){
+				$("#AddBookName").val("");
+				$("#AddAuthor").val("");
+				$("#AddPrice").val("");
+			}
+		});
+		//对“修改图书信息”窗口进行初始化
+		$("#UpdateDiv").dialog({
+			title: "修改图书信息",
+			autoOpen : false,
+			height : 280,
+			width : 400,
+			modal : true,
+			show: "blind", 
+			hide: "fade",
+			close : function(){
+				$("#UpdateId").val("");
+				$("#UpdateBookName").val("");
+				$("#UpdateAuthor").val("");
+				$("#UpdatePrice").val("");
+			}
+		});
+		//对添加图书窗口的添加键绑定事件驱动程序
+		$("#AddSubmit").click(function(){
+			//提交服务器
+			$.post("add.action", {bookname:$("#AddBookName").val(), author:$("#AddAuthor").val(), price:$("#AddPrice").val()}, function(data){
+				if (data=="1") {
+					$("#AddDiv").dialog("close");
+					RetrieveBooks();
+				} else
+				{
+					$("#AddTip").html("添加图书失败！请重新输入数据。");
+					$("#AddTip").show().delay(5000).hide(0);
+				}
+			}, "json");
+		});
+		//对添加图书窗口的添加键绑定事件驱动程序
+		$("#UpdateSubmit").click(function(){
+			//提交服务器
+			$.post("update.action", {id:$("#UpdateId").val(),bookname:$("#UpdateBookName").val(), author:$("#UpdateAuthor").val(), price:$("#UpdatePrice").val()}, function(data){
+				if (data=="1") {
+					$("#UpdateDiv").dialog("close");
+					RetrieveBooks();
+				} else
+				{
+					$("#UpdateTip").html("更新图书失败！请重新输入数据。");
+					$("#UpdateTip").show().delay(5000).hide(0);
+				}
+			}, "json");
+		});
+		//对“新增图书信息”链接绑定事件驱动程序
+		$("#AddButton").click(function() {
+			$("#AddDiv").dialog("open");
+		});	
+		//第一次加载检索所有书籍
+		RetrieveBooks();
+	});
+</script>
+</head>
+<body>
+	<h1>图书管理系统</h1>
+	<a id="AddButton" href="#">增加图书信息</a>
+	<table style="width: 50%" id="BooksTable">
+		<tr>
+			<th>书名</th>
+			<th>作者</th>
+			<th>价格</th>
+			<th>管理</th>
+		</tr>
+	</table>
+	<div id="AddDiv" style="display: hidden">
+		<form id="AddForm">
+			<table style="width: 350px;" id="AddTable">
+				<tr>
+					<th width="30%">书名：</th>
+					<td width="70%" class="ltd"><input name="bookname" type="text"
+						id="AddBookName"></td>
+				</tr>
+				<tr>
+					<th>作者：</th>
+					<td class="ltd"><input name="author" type="text" id="AddAuthor"></td>
+				</tr>
+				<tr>
+					<th>价格：</th>
+					<td class="ltd"><input name="price" type="text" id="AddPrice">元</td>
+				</tr>
+				<tr>
+					<th colspan="2"><input type="button" value="添加" id ="AddSubmit"> <input
+						type="reset" value="重置"></th>
+				</tr>
+			</table>
+		</form>
+		<span style="color:red;" id="AddTip"></span>
+	</div>
+	<div id="UpdateDiv" style="display: hidden">
+		<form id="UpdateForm">
+			<table style="width: 350px;" id="UpdateTable">
+				<tr>
+					<th width="30%">书名：</th>
+					<td width="70%" class="ltd"><input name="id" type="hidden"
+						id="UpdateId"><input name="bookname" type="text"
+						id="UpdateBookName"></td>
+				</tr>
+				<tr>
+					<th>作者：</th>
+					<td class="ltd"><input name="author" type="text" id="UpdateAuthor"></td>
+				</tr>
+				<tr>
+					<th>价格：</th>
+					<td class="ltd"><input name="price" type="text" id="UpdatePrice">元</td>
+				</tr>
+				<tr>
+					<th colspan="2"><input type="button" value="修改" id ="UpdateSubmit"> <input
+						type="reset" value="重置"></th>
+				</tr>
+			</table>
+		</form>
+		<span style="color:red;" id="UpdateTip"></span>
+	</div>
+	<br />
+	<hr />
+	<div style="text-align: center; width: 100%; font-size: 12px; color: #333;">
+		&copy;版权所有：石家庄铁道大学信息科学与技术学院&nbsp;&nbsp;<a href="Lab04-2.png"
+			target="_blank">网站地图</a>
+	</div>
+</body>
+</html>
